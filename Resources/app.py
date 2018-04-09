@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
 Base = automap_base()
 import numpy as np
+import pandas as pd
 
 engine = create_engine("sqlite:///hawaii.sqlite")
 Base.prepare(engine,reflect = True)
@@ -19,8 +20,8 @@ def welcome():
         f"/api/v1.0/precipitation -- dates and temperature observations from the last year<br/>"
         f"/api/v1.0/stations -- list of stations<br/>"
         f"/api/v1.0/tobs -- list of Temperature Observations for the previous year <br/>"
-        f"/api/v1.0/<start> -- Minimum temperature, average temperature, max temperature<br/>"
-        f"/api/v1.0/<start>/<end> -- Min temperature, average temperature, max temperature of this period")
+        f"/api/v1.0/start -- Minimum temperature, average temperature, max temperature<br/>"
+        f"/api/v1.0/start/end -- Min temperature, average temperature, max temperature of this period")
 
 @app.route("/api/v1.0/precipitation")
 def dtemp():
@@ -66,16 +67,17 @@ def start_date(start):
     return jsonify(tempp)
 
 @app.route("/api/v1.0/<start>/<end>")
-def dates(start,end):
-    temperatures = session.query(func.max(Measurement.tobs),func.min(Measurement.tobs),func.avg(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date<= end).all()
-    t = list(np.ravel(temperatures))
-    te = [
-        {"Maximum temperature":t[0]},
-        {"Minimum temperature":t[1]},
-        {"Average temperature":t[2]}
+def temp_range(start, end):
+    sel = [func.max(Measurement.tobs),func.min(Measurement.tobs),func.avg(Measurement.tobs)]
+    results = session.query(*sel).filter(Measurement.date >= start).filter(Measurement.date<=end).all()
+    result_list = list(np.ravel(results))
+    responses = [
+        {"Maximum temperature":result_list[0]},
+        {"Minimum temperature":result_list[1]},
+        {"Average temperature":result_list[2]}
     ]
-    return jsonify(te)
-    
+    return jsonify(responses)
+        
 
 if __name__ == "__main__":
     app.run(debug=True)
